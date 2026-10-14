@@ -56,9 +56,62 @@ def get_player_move(board):
         return position
 
 
+def find_completing_move(board, mark):
+    """If `mark` has two in a line and the third square is empty,
+    return that empty square. Otherwise return None."""
+    for line in WINNING_LINES:
+        count = 0
+        empty_spot = None
+        for position in line:
+            if board[position] == mark:
+                count += 1
+            elif board[position] not in ("X", "O"):
+                empty_spot = position
+        if count == 2 and empty_spot is not None:
+            return empty_spot
+    return None
+
+
+def line_is_open(board, line):
+    """A line is still open to the computer if the player hasn't claimed any of it."""
+    for position in line:
+        if board[position] == "X":
+            return False
+    return True
+
+
 def get_computer_move(board):
-    """Pick a random empty square."""
-    return random.choice(get_empty_squares(board))
+    """Choose a move: win if possible, block if necessary,
+    otherwise take the square on the most lines still open."""
+    # 1. Can I win right now?
+    move = find_completing_move(board, "O")
+    if move is not None:
+        return move
+ 
+    # 2. Does the player need to be blocked?
+    move = find_completing_move(board, "X")
+    if move is not None:
+        return move
+ 
+    # 3. Score each empty square by how many open lines it sits on
+    best_score = -1
+    best_moves = []
+    for position in get_empty_squares(board):
+        score = 0
+        for line in WINNING_LINES:
+            if position in line and line_is_open(board, line):
+                score += 1
+ 
+        if score > best_score:
+            best_score = score
+            best_moves = [position]       # new best: start a fresh list
+        elif score == best_score:
+            best_moves.append(position)   # tied for best: add to the list
+ 
+    # If several squares tie, pick one of them at random
+    return random.choice(best_moves)
+
+
 
 
 def find_winner(board):
